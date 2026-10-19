@@ -1,0 +1,86 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Product {
+  id                Int           @id @default(autoincrement()) @db.UnsignedInt
+  productCode       String        @unique @map("product_code") @db.VarChar(50)
+  productNameFull   String        @map("product_name_full") @db.VarChar(255)
+  productNameShort  String?       @map("product_name_short") @db.VarChar(100)
+  program           Program
+  unitLengthCm      Decimal?      @map("unit_length_cm") @db.Decimal(10, 4)
+  unitBreadthCm     Decimal?      @map("unit_breadth_cm") @db.Decimal(10, 4)
+  unitHeightCm      Decimal?      @map("unit_height_cm") @db.Decimal(10, 4)
+  qtyPerCarton      Int?          @map("qty_per_carton") @db.UnsignedInt
+  cartonLengthCm    Decimal?      @map("carton_length_cm") @db.Decimal(10, 4)
+  cartonBreadthCm   Decimal?      @map("carton_breadth_cm") @db.Decimal(10, 4)
+  cartonHeightCm    Decimal?      @map("carton_height_cm") @db.Decimal(10, 4)
+  unitVolumeCarton  Decimal?      @map("unit_volume_carton") @db.Decimal(14, 4)
+  unitVolumeM3      Decimal?      @map("unit_volume_m3") @db.Decimal(14, 6)
+  cartonVolumeM3    Decimal?      @map("carton_volume_m3") @db.Decimal(14, 6)
+  palletCoefficient Int?          @map("pallet_coefficient") @db.UnsignedInt
+  price             Decimal?      @db.Decimal(18, 4)
+  currency          String        @default("USD") @db.Char(3)
+  status            ProductStatus @default(Active)
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+  changeLogs        ChangeLog[]
+
+  @@map("products")
+}
+
+model ChangeLog {
+  id           BigInt       @id @default(autoincrement()) @db.UnsignedBigInt
+  productId    Int?         @map("product_id") @db.UnsignedInt
+  productCode  String?      @map("product_code") @db.VarChar(50)
+  fieldChanged String       @map("field_changed") @db.VarChar(100)
+  oldValue     String?      @map("old_value") @db.Text
+  newValue     String?      @map("new_value") @db.Text
+  changedBy    String       @map("changed_by") @db.VarChar(100)
+  action       ChangeAction @default(UPDATE)
+  changedAt    DateTime     @default(now()) @map("changed_at")
+  product      Product?     @relation(fields: [productId], references: [id])
+
+  @@index([productId], map: "change_log_product_id_fkey")
+  @@map("change_log")
+}
+
+model User {
+  id           Int      @id @default(autoincrement()) @db.UnsignedInt
+  username     String   @unique @db.VarChar(80)
+  name         String   @db.VarChar(120)
+  email        String   @unique @db.VarChar(200)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  role         UserRole @default(viewer)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("users")
+}
+
+enum ProductStatus {
+  Active
+  Inactive
+  Retired
+}
+
+enum Program {
+  GF_MAL  @map("GF-MAL")
+  GF_HIV  @map("GF-HIV")
+  GF_NACA @map("GF-NACA")
+}
+
+enum UserRole {
+  admin
+  viewer
+}
+
+enum ChangeAction {
+  INSERT
+  UPDATE
+  DELETE
+}
